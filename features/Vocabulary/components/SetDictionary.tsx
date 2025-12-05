@@ -36,12 +36,21 @@ const SetDictionary = memo(function SetDictionary({
                 'border-b-1 border-[var(--border-color)]'
             )}
           >
-            <FuriganaText
-              text={wordObj.word}
-              reading={wordObj.reading}
-              className='text-6xl md:text-5xl'
-              lang='ja'
-            />
+            <a
+              href={`https://jisho.org/search/${encodeURIComponent(
+                wordObj.word
+              )}`}
+              target='_blank'
+              rel='noopener'
+              className='cursor-pointer  transition-opacity'
+            >
+              <FuriganaText
+                text={wordObj.word}
+                reading={wordObj.reading}
+                className='text-6xl md:text-5xl'
+                lang='ja'
+              />
+            </a>
             <div className='flex flex-col gap-2 items-start'>
               <span
                 className={clsx(
