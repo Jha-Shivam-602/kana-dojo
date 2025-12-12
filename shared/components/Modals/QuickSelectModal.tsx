@@ -1,6 +1,13 @@
 import { useMemo, useState } from 'react';
 import clsx from 'clsx';
-import { X, CircleCheck, Circle } from 'lucide-react';
+import {
+  X,
+  CircleCheck,
+  Circle,
+  CheckCheck,
+  Trash2,
+  Dices
+} from 'lucide-react';
 import { useClick } from '@/shared/hooks/useAudio';
 import { ActionButton } from '@/shared/components/ui/ActionButton';
 
@@ -82,25 +89,50 @@ const QuickSelectModal = ({
           </button>
         </div>
 
-        <div className="flex flex-wrap gap-2 sm:gap-3 p-3 sm:p-4 border-b-2 border-[var(--border-color)] flex-shrink-0">
+        <div className="flex flex-col sm:flex-row sm:flex-nowrap gap-2 sm:gap-3 p-3 sm:p-4 border-b-2 border-[var(--border-color)] flex-shrink-0">
           {[
             {
               label: 'Select All',
               onClick: onSelectAll,
-              disabled: sets.length === selectedSets.length,
+              disabled: false,
+              icon: CheckCheck,
+              iconOnly: false,
+              colorScheme: 'main' as const,
+              borderColorScheme: 'main' as const,
               show: true
             },
             {
               label: 'Clear All',
               onClick: onClearAll,
-              disabled: selectedSets.length === 0,
+              disabled: false,
+              icon: Trash2,
+              iconOnly: true,
+              colorScheme: 'main' as const,
+              borderColorScheme: 'main' as const,
               show: true
             },
-            { label: 'Random 3', onClick: () => onSelectRandom(3), show: true },
-            { label: 'Random 5', onClick: () => onSelectRandom(5), show: true },
+            {
+              label: 'Random 3',
+              onClick: () => onSelectRandom(3),
+              disabled: false,
+              icon: Dices,
+              iconOnly: false,
+              show: true
+            },
+            {
+              label: 'Random 5',
+              onClick: () => onSelectRandom(5),
+              disabled: false,
+              icon: Dices,
+              iconOnly: false,
+              show: true
+            },
             {
               label: 'Random 10',
               onClick: () => onSelectRandom(10),
+              disabled: false,
+              icon: Dices,
+              iconOnly: false,
               show: true
             }
           ]
@@ -113,13 +145,32 @@ const QuickSelectModal = ({
                   btn.onClick();
                 }}
                 disabled={btn.disabled}
-                colorScheme="secondary"
-                borderColorScheme="secondary"
+                colorScheme={btn.colorScheme ?? 'secondary'}
+                borderColorScheme={btn.borderColorScheme ?? 'secondary'}
                 borderRadius="2xl"
                 borderBottomThickness={6}
-                className="w-auto px-3 sm:px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                className={clsx(
+                  'w-auto text-sm disabled:cursor-not-allowed disabled:opacity-50',
+                  btn.iconOnly
+                    ? 'px-2.5 sm:px-3 py-2 min-w-[6.5rem]'
+                    : 'px-2.5 sm:px-3 py-2'
+                )}
               >
-                {btn.label}
+                <span
+                  className={clsx(
+                    'flex items-center w-full justify-center',
+                    btn.iconOnly ? 'gap-0' : 'gap-2'
+                  )}
+                >
+                  {btn.icon ? (
+                    <btn.icon size={16} className="text-current" />
+                  ) : null}
+                  {btn.iconOnly ? (
+                    <span className="sr-only">{btn.label}</span>
+                  ) : (
+                    btn.label
+                  )}
+                </span>
               </ActionButton>
             ))}
           <input
@@ -134,6 +185,7 @@ const QuickSelectModal = ({
             placeholder="search for a level..."
             className={clsx(
               'px-3 sm:px-4 py-2 text-sm rounded-xl border-2 transition-all',
+              'flex-1 sm:flex-none sm:w-[220px]',
               'border-[var(--border-color)] hover:bg-[var(--card-color)]',
               'text-[var(--secondary-color)]',
               'focus:outline-0 focus:ring focus:ring-offset-2-[var(--secondary-color)]/80'
