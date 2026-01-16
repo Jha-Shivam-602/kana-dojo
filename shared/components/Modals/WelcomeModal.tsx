@@ -59,10 +59,16 @@ const WelcomeModal = () => {
 
   useEffect(() => {
     const isDev = process.env.NODE_ENV === 'development';
+    // In Vercel preview deployments, NEXT_PUBLIC_VERCEL_ENV is 'preview' (not 'production')
+    // This means analytics are disabled in previews, so we show the modal every time like in dev
+    const isPreviewDeployment =
+      process.env.NODE_ENV === 'production' &&
+      process.env.NEXT_PUBLIC_VERCEL_ENV !== 'production';
     const isBaseRoute =
       pathname === '/' || pathname === '/en' || pathname === '/ja';
 
-    if (!hasSeenWelcome || (isDev && isBaseRoute)) {
+    // Show modal if user hasn't seen it, OR in dev/preview mode on home page
+    if (!hasSeenWelcome || ((isDev || isPreviewDeployment) && isBaseRoute)) {
       const timer = setTimeout(() => {
         setIsVisible(true);
       }, 1000);

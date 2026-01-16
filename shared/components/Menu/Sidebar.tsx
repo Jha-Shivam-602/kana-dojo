@@ -11,11 +11,13 @@ import {
   type LucideIcon
 } from 'lucide-react';
 import clsx from 'clsx';
+import { motion } from 'framer-motion';
 import { useClick } from '@/shared/hooks/useAudio';
 import { ReactNode, useEffect, useRef, memo, useState } from 'react';
 import { useInputPreferences } from '@/features/Preferences';
 import { removeLocaleFromPath } from '@/shared/lib/pathUtils';
 import type { Experiment } from '@/shared/data/experiments';
+import { ActionButton } from '@/shared/components/ui/ActionButton';
 
 // ============================================================================
 // Types
@@ -72,9 +74,17 @@ const staticSecondaryNavSections: NavSection[] = [
 // Base experiments section (without dynamic experiments)
 const baseExperimentsSection: NavSection = {
   title: 'Experiments',
-  items: [{ href: '/experiments', label: 'All Experiments', icon: Sparkles }],
+  // items: [{ href: '/experiments', label: 'All Experiments', icon: Sparkles }],
+  items: [],
   collapsible: true
 };
+
+// ============================================================================
+// Design Toggle
+// ============================================================================
+
+/** Toggle between ActionButton style (true) and simple background style (false) for active nav items */
+const USE_ACTION_BUTTON_STYLE = true;
 
 // ============================================================================
 // Subcomponents
@@ -85,56 +95,152 @@ type NavLinkProps = {
   isActive: boolean;
   onClick: () => void;
   variant: 'main' | 'secondary';
+  /** When true, uses framer-motion sliding indicator behind nav item */
+  useSlidingIndicator?: boolean;
 };
 
-const NavLink = memo(({ item, isActive, onClick, variant }: NavLinkProps) => {
-  const Icon = item.icon;
-  const isMain = variant === 'main';
+const NavLink = memo(
+  ({
+    item,
+    isActive,
+    onClick,
+    variant,
+    useSlidingIndicator = false
+  }: NavLinkProps) => {
+    const Icon = item.icon;
+    const isMain = variant === 'main';
 
-  const baseClasses = clsx(
-    'flex items-center gap-2 rounded-xl transition-all duration-250',
-    isMain
-      ? 'text-2xl max-lg:justify-center max-lg:px-3 max-lg:py-2 lg:w-full lg:px-4 lg:py-2'
-      : 'w-full px-4 py-2 text-xl max-lg:hidden'
-  );
+    const baseClasses = clsx(
+      'flex items-center gap-2 rounded-2xl transition-all duration-250',
+      'text-2xl max-lg:justify-center max-lg:px-3 max-lg:py-2 lg:w-full lg:px-4 lg:py-2',
+      !isMain && 'max-lg:hidden'
+    );
 
-  const stateClasses = isActive
-    ? 'bg-[var(--border-color)] text-[var(--main-color)] lg:bg-[var(--card-color)]'
-    : 'text-[var(--secondary-color)] hover:bg-[var(--card-color)]';
+    // Style classes for original (simple) design
+    const activeClassesSimple =
+      'bg-[var(--border-color)] text-[var(--main-color)] lg:bg-[var(--card-color)]';
+    const inactiveClasses =
+      'text-[var(--secondary-color)] hover:bg-[var(--card-color)]';
 
-  const renderIcon = (): ReactNode => {
-    if (item.charIcon) {
-      return item.charIcon;
-    }
+    const renderIcon = (): ReactNode => {
+      if (item.charIcon) {
+        return item.charIcon;
+      }
 
-    if (Icon) {
+      if (Icon) {
+        return (
+          <Icon
+            className={clsx(
+              'shrink-0',
+              item.animateWhenInactive &&
+                !isActive &&
+                'motion-safe:animate-bounce',
+              item.iconClassName
+            )}
+          />
+        );
+      }
+
+      return null;
+    };
+
+    // Sliding indicator style - indicator is rendered separately and animates between items
+    if (useSlidingIndicator) {
+      // Different indicator styles based on USE_ACTION_BUTTON_STYLE
+      const indicatorClasses = USE_ACTION_BUTTON_STYLE
+        ? 'absolute inset-0 rounded-xl lg:rounded-2xl border-b-6 lg:border-b-8 border-[var(--main-color-accent)] bg-[var(--main-color)]'
+        : 'absolute inset-0 rounded-2xl bg-[var(--card-color)]';
+
+      // Text color when active differs based on style
+      const activeTextClass = USE_ACTION_BUTTON_STYLE
+        ? 'text-[var(--background-color)]'
+        : 'text-[var(--main-color)]';
+
+      // Padding adjustment for ActionButton style (compensate for border)
+      const paddingClasses = USE_ACTION_BUTTON_STYLE
+        ? 'max-lg:pt-1 max-lg:pb-2.5 lg:pt-2 lg:pb-3'
+        : 'max-lg:py-2 lg:py-2';
+
       return (
-        <Icon
-          className={clsx(
-            'shrink-0',
-            item.animateWhenInactive &&
-              !isActive &&
-              'motion-safe:animate-bounce',
-            item.iconClassName
+        <div className='relative lg:w-full'>
+          {/* Sliding indicator - smooth spring animation */}
+          {isActive && (
+            <motion.div
+              layoutId='sidebar-nav-indicator'
+              className={indicatorClasses}
+              transition={{
+                type: 'spring',
+                stiffness: 300,
+                damping: 30
+              }}
+            />
           )}
-        />
+          <Link
+            href={item.href}
+            onClick={onClick}
+            className={clsx(
+              'relative z-10 flex items-center gap-2 rounded-2xl',
+              'text-2xl max-lg:justify-center max-lg:px-3 lg:w-full lg:px-4',
+              paddingClasses,
+              !isMain && 'max-lg:hidden',
+              isActive
+                ? activeTextClass
+                : 'text-[var(--secondary-color)] hover:bg-[var(--card-color)]'
+            )}
+          >
+            {renderIcon()}
+            <span className={isMain ? 'max-lg:hidden' : undefined}>
+              {item.label}
+            </span>
+          </Link>
+        </div>
       );
     }
 
-    return null;
-  };
+    // Active state with ActionButton style (non-sliding)
+    if (isActive && USE_ACTION_BUTTON_STYLE) {
+      return (
+        <Link
+          href={item.href}
+          onClick={onClick}
+          className='w-full max-lg:contents'
+        >
+          <ActionButton
+            borderBottomThickness={6}
+            borderRadius='xl'
+            className={clsx(
+              'flex items-center gap-2',
+              'text-2xl max-lg:justify-center max-lg:px-3 max-lg:py-2 lg:w-full lg:px-4 lg:py-2',
+              !isMain && 'max-lg:hidden'
+            )}
+          >
+            {renderIcon()}
+            <span className={isMain ? 'max-lg:hidden' : undefined}>
+              {item.label}
+            </span>
+          </ActionButton>
+        </Link>
+      );
+    }
 
-  return (
-    <Link
-      href={item.href}
-      className={clsx(baseClasses, stateClasses)}
-      onClick={onClick}
-    >
-      {renderIcon()}
-      <span className={isMain ? 'max-lg:hidden' : undefined}>{item.label}</span>
-    </Link>
-  );
-});
+    // Default Link style (used for inactive, or active with simple style)
+    return (
+      <Link
+        href={item.href}
+        className={clsx(
+          baseClasses,
+          isActive ? activeClassesSimple : inactiveClasses
+        )}
+        onClick={onClick}
+      >
+        {renderIcon()}
+        <span className={isMain ? 'max-lg:hidden' : undefined}>
+          {item.label}
+        </span>
+      </Link>
+    );
+  }
+);
 
 NavLink.displayName = 'NavLink';
 
@@ -155,7 +261,7 @@ const SectionHeader = ({
     return (
       <button
         onClick={onToggle}
-        className='mt-3 flex w-full items-center gap-1 px-4 text-xs text-[var(--main-color)] uppercase opacity-70 transition-opacity hover:opacity-100 max-lg:hidden'
+        className='mt-3 flex w-full cursor-pointer items-center gap-1 px-4 text-xs text-[var(--main-color)] uppercase opacity-70 transition-opacity hover:opacity-100 max-lg:hidden'
       >
         {isExpanded ? (
           <ChevronDown className='h-3 w-3' />
@@ -284,16 +390,19 @@ const Sidebar = () => {
         </span>
       </h1>
 
-      {/* Main Navigation */}
-      {mainNavItems.map(item => (
-        <NavLink
-          key={item.href}
-          item={item}
-          isActive={isActive(item.href)}
-          onClick={playClick}
-          variant='main'
-        />
-      ))}
+      {/* Main Navigation - with sliding indicator */}
+      <div className='contents max-lg:flex max-lg:w-full max-lg:items-center max-lg:justify-evenly'>
+        {mainNavItems.map(item => (
+          <NavLink
+            key={item.href}
+            item={item}
+            isActive={isActive(item.href)}
+            onClick={playClick}
+            variant='main'
+            useSlidingIndicator={true}
+          />
+        ))}
+      </div>
 
       {/* Secondary Navigation Sections */}
       {secondaryNavSections.map(section => (
@@ -311,6 +420,7 @@ const Sidebar = () => {
               isActive={isActive(item.href)}
               onClick={playClick}
               variant='secondary'
+              useSlidingIndicator={true}
             />
           ))}
         </div>
