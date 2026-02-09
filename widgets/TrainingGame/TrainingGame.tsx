@@ -41,14 +41,46 @@ export function TrainingGame<T>({
   children,
 }: TrainingGameProps<T>) {
   const gameState = useGameEngine({ content, mode, adapter, contentType });
+  // Destructure for dependency stability
+  const { questionsAnswered, currentIndex, isComplete, nextQuestion } =
+    gameState;
 
   // Handle game completion
   useEffect(() => {
-    if (gameState.isComplete) {
+    if (isComplete) {
       statsApi.recordSessionComplete(contentType);
       onComplete?.();
     }
-  }, [gameState.isComplete, contentType, onComplete]);
+  }, [isComplete, contentType, onComplete]);
+
+  // Keyboard navigation listener (Enter/Space to continue)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if user is typing in an input field (unless it's just a button focus)
+      // or if using IME (Input Method Editor) for Japanese
+      const isInput =
+        e.target instanceof HTMLElement &&
+        (e.target.tagName === 'INPUT' ||
+          e.target.tagName === 'TEXTAREA' ||
+          e.target.isContentEditable);
+
+      if (e.isComposing || e.defaultPrevented || isInput) {
+        return;
+      }
+
+      // Only proceed if an answer has been selected (questionsAnswered > currentIndex)
+      // and the game is not yet complete.
+      const canProceed = questionsAnswered > currentIndex && !isComplete;
+
+      if (canProceed && (e.key === 'Enter' || e.key === ' ')) {
+        e.preventDefault(); // Prevent scrolling for Space
+        nextQuestion();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [questionsAnswered, currentIndex, isComplete, nextQuestion]);
 
   return <>{children(gameState)}</>;
 }
