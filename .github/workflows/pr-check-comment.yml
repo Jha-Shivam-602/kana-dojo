@@ -49,7 +49,7 @@ jobs:
             const successT = templates.prCheck.success;
             const failureT = templates.prCheck.failure;
 
-            const run = context.payload.workflow_run;
+
             const prs = run.pull_requests || [];
             if (!prs.length) {
               console.log('No pull request associated with this workflow_run');
